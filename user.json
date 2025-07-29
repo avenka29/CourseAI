@@ -1,0 +1,14 @@
+[
+  {
+    "id": "u001",
+    "name": "Alice Johnson",
+    "major": "Computer Science",
+    "courses_taken": ["CS101", "MA101", "ST370"],
+    "career_interests": ["machine learning", "ai", "data science", "dev ops"],
+    "gpa": 3.78,
+    "expected_graduation_year": 2025,
+    "email": "alice.johnson@email.edu",
+    "extracurriculars": ["AI Club", "Hackathon Team"],
+    "notes": "Interested in research opportunities and internships."
+  }
+]

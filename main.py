@@ -5,9 +5,13 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from chromadb.config import Settings
+from google import genai
+
+GEMINI_API_KEY = ""  # Replace with API key
+client = genai.Client(api_key=GEMINI_API_KEY)
 
 
-
+question = input("Question: ")
 DOCUMENTS_TO_PROCESS = [
     {
         "path": "/sample.pdf",
@@ -45,20 +49,44 @@ chroma_db = Chroma(
 chroma_db.add_documents(docs)
 
 
-print("\n--- Stored Documents ---")
 retrieved_docs = chroma_db.get()
 collection = chroma_client.get_collection("CH101")
 results = collection.query(
-    query_texts=["When is the final exam?"],
+    query_texts=[question],
     n_results=5,
     where = {"course_id": {"$eq": "CH101"}}
 )
 
-documents = results.get('documents', [])
-metadatas = results.get('metadatas', [])
+# Get the retrieved documents
+retrieved_documents = results['documents'][0] if results['documents'] else []
+retrieved_metadatas = results['metadatas'][0] if results['metadatas'] else []
 
-for i, (doc, meta) in enumerate(zip(documents, metadatas), 1):
-    print(f"Result {i}:")
-    print("Content:", doc[:300], "...")  # print first 300 chars
-    print("Metadata:", meta)
-    print("-" * 40)
+# Prepare context for LLM
+context_text = ""
+for i, doc in enumerate(retrieved_documents):
+    context_text += f"Document {i+1}:\n{doc}\n\n"
+
+# Create prompt with context and query
+user_query = question
+prompt = f"""You are a helpful AI assistant that answers questions based on the provided context from course materials.
+
+Context:
+{context_text}
+
+Question: {user_query}
+
+Please answer the question based on the context provided. If the information is not available in the context, please say
+'I couldnt find that information in the syllabus.. Sorry!'. Be concise and accurate in your response.
+
+Answer:"""
+
+# Send to Gemini LLM
+try:
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents = prompt)
+    print(f"User Query: {user_query}")
+    print(f"Number of relevant documents found: {len(retrieved_documents)}")
+    print(f"LLM Response: {response.text}")
+except Exception as e:
+    print(f"Error generating response: {str(e)}")
